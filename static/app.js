@@ -3,28 +3,42 @@ async function listDevices() {
     const devices = await response.json();
 
     const deviceList = document.getElementById("device-list");
+    const syncedDeviceList = document.getElementById("synced-devices");
+
     if (deviceList) {
         deviceList.innerHTML = "";
     }
+    if (syncedDeviceList) {
+        syncedDeviceList.innerHTML = "";
+    }
+
     devices.forEach(device => {
         const li = document.createElement("li");
         li.textContent = `${device.name} (${device.address})`;
-        li.onclick = () => syncDevice(device.address);  // Ao clicar, tenta sincronizar o dispositivo
-        if (deviceList) {
-            deviceList.appendChild(li);
+        li.onclick = () => syncDevice(device.address);
+
+        if (device.synced) {
+            if (syncedDeviceList) {
+                syncedDeviceList.appendChild(li);
+            }
+        } else {
+            if (deviceList) {
+                deviceList.appendChild(li);
+            }
         }
     });
 }
 
+// Função para iniciar o loop de pesquisa a cada 5 segundos
+function startDevicePolling() {
+    listDevices();
+    setInterval(listDevices, 5000);
+}
+
+// Iniciar o polling quando a página carregar
+window.onload = startDevicePolling;
 
 async function syncDevice(address) {
-    // Exibe uma mensagem enquanto aguarda a resposta da API
-    const syncButton = document.getElementById(`sync-button-${address}`);
-    if (syncButton) {
-        syncButton.textContent = "Sincronizando..."; // Atualiza o texto do botão para 'Sincronizando'
-    }
-
-    // Envia a requisição para a API
     const response = await fetch("/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -34,26 +48,22 @@ async function syncDevice(address) {
     const result = await response.json();
     alert(result.message || result.error);
 
-    // Atualiza o botão e a lista de dispositivos
-    if (syncButton) {
-        syncButton.textContent = "Sincronizar"; // Restaura o texto do botão
-    }
-
     // Após a sincronização, atualize a lista de dispositivos
-    listDevices(); // Atualiza a lista de dispositivos (agora com os sincronizados)
+    listDevices();
 }
 
-async function sendCommand() {
-    const address = prompt("Endereço do dispositivo:");
-    const commandInput = document.getElementById("command-input");
-    const command = commandInput ? commandInput.value : "";
+async function sendVolumeDownCommand() {
+    const response = await fetch("/devices");
+    const devices = await response.json();
 
-    const response = await fetch("/command", {
+    const syncedDevices = devices.filter(device => device.synced);
+
+    const responseCommand = await fetch("/command", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address, command })
+        body: JSON.stringify({ command: "volume_down", devices: syncedDevices })
     });
 
-    const result = await response.json();
+    const result = await responseCommand.json();
     alert(result.message || result.error);
 }

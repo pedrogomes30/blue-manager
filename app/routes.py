@@ -1,11 +1,10 @@
-
 from flask import Blueprint, jsonify, request, render_template
-from app.bluetooth_controller import bluetooth_controller
+from app.bluetooth_controller import BluetoothController
 
 bp = Blueprint("api", __name__)
 
-# Crie uma instância do bluetooth_controller
-bt_controller = bluetooth_controller()
+# Crie uma instância do BluetoothController
+bt_controller = BluetoothController()
 
 # Função para registrar as rotas
 def register_routes(app):
@@ -16,14 +15,10 @@ def register_routes(app):
 def index():
     return render_template("index.html")
 
-# app/routes.py
-
 @bp.route("/devices", methods=["GET"])
 async def devices():
     devices = await bt_controller.list_devices()
-    # Exibe o nome e o endereço do dispositivo
-    return jsonify([{"name": device["name"], "address": device["address"]} for device in devices])
-
+    return jsonify(devices)
 
 @bp.route("/sync", methods=["POST"])
 async def sync():
@@ -42,11 +37,9 @@ async def sync():
 @bp.route("/command", methods=["POST"])
 async def command():
     data = request.json
-    address = data.get("address")
     command = data.get("command")
-    if not address or not command:
-        return jsonify({"error": "Address and command are required"}), 400
-    result = await bt_controller.send_command(address, command)
-    if result["status"] == "success":
-        return jsonify({"message": "Command sent successfully", "device": result["device"], "command": result["command"]})
-    return jsonify({"error": result.get("message", "Failed to send command")}), 500
+    devices = data.get("devices")
+    if not command or not devices:
+        return jsonify({"error": "Command and devices are required"}), 400
+    results = await bt_controller.send_command(command, devices)
+    return jsonify(results)

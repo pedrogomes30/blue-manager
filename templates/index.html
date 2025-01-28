@@ -6,21 +6,18 @@
     <title>Bluetooth Controller</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="{{ url_for('static', filename='app.js') }}" defer></script>
-
 </head>
 <body>
     <div id="app">
         <h1>Bluetooth Controller</h1>
         <h2>Dispositivos Disponíveis</h2>
         <ul id="device-list"></ul>
-        <button onclick="listDevices()">Listar Dispositivos</button>
 
         <h2>Dispositivos Sincronizados</h2>
         <ul id="synced-devices"></ul>
 
         <h2>Enviar Comando</h2>
-        <input type="text" id="command-input" placeholder="Comando">
-        <button onclick="sendCommand()">Enviar</button>
+        <button onclick="sendVolumeDownCommand()">Enviar Volume -</button>
     </div>
 </body>
 </html>
