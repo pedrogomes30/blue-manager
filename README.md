@@ -1,4 +1,4 @@
 activate venv:
 
-source venv/bin/activate
+pyenv activate blue-manager-env
 

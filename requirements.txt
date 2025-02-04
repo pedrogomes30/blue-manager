@@ -1,3 +1,2 @@
-Flask
-bleak
-aiosqlite
+Flask[async]
+PyBluez

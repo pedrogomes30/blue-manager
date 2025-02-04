@@ -1,69 +1,84 @@
 async function listDevices() {
-    const response = await fetch("/devices");
-    const devices = await response.json();
+    try {
+        const response = await fetch("/devices");
+        const devices = await response.json();
 
-    const deviceList = document.getElementById("device-list");
-    const syncedDeviceList = document.getElementById("synced-devices");
+        const deviceList = document.getElementById("device-list");
+        const syncedDeviceList = document.getElementById("synced-devices");
 
-    if (deviceList) {
-        deviceList.innerHTML = "";
-    }
-    if (syncedDeviceList) {
-        syncedDeviceList.innerHTML = "";
-    }
+        if (deviceList) deviceList.innerHTML = "";
+        if (syncedDeviceList) syncedDeviceList.innerHTML = "";
 
-    devices.forEach(device => {
-        const li = document.createElement("li");
-        li.textContent = `${device.name} (${device.address})`;
-        li.onclick = () => syncDevice(device.address);
+        devices.forEach(device => {
+            const li = document.createElement("li");
+            li.textContent = `${device.name} (${device.address})`;
+            // Ao clicar, tenta sincronizar (estabelecer conexão persistente)
+            li.onclick = () => syncDevice(device.address);
 
-        if (device.synced) {
-            if (syncedDeviceList) {
-                syncedDeviceList.appendChild(li);
+            if (device.synced) {
+                if (syncedDeviceList) {
+                    syncedDeviceList.appendChild(li);
+                }
+            } else {
+                if (deviceList) {
+                    deviceList.appendChild(li);
+                }
             }
-        } else {
-            if (deviceList) {
-                deviceList.appendChild(li);
-            }
-        }
-    });
+        });
+    } catch (error) {
+        console.error("Erro ao listar dispositivos:", error);
+    }
 }
 
-// Função para iniciar o loop de pesquisa a cada 5 segundos
-function startDevicePolling() {
-    listDevices();
-    setInterval(listDevices, 5000);
+// Loop de atualização a cada 5 segundos
+async function startDevicePolling() {
+    while (true) {
+        await listDevices();
+        await new Promise(resolve => setTimeout(resolve, 5000));
+    }
 }
-
-// Iniciar o polling quando a página carregar
-window.onload = startDevicePolling;
 
 async function syncDevice(address) {
-    const response = await fetch("/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address })
-    });
-
-    const result = await response.json();
-    alert(result.message || result.error);
-
-    // Após a sincronização, atualize a lista de dispositivos
-    listDevices();
+    try {
+        const response = await fetch("/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ address })
+        });
+        const result = await response.json();
+        if (response.ok) {
+            alert(result.message);
+        } else {
+            alert(result.error || "Failed to sync device.");
+        }
+        // Atualiza a lista após a sincronização
+        await listDevices();
+    } catch (error) {
+        console.error("Error syncing device:", error);
+        alert("An error occurred while syncing the device.");
+    }
 }
 
 async function sendVolumeDownCommand() {
-    const response = await fetch("/devices");
-    const devices = await response.json();
+    try {
+        const response = await fetch("/devices");
+        const devices = await response.json();
+        // Filtra os dispositivos sincronizados (que possuem conexão persistente)
+        const syncedDevices = devices.filter(device => device.synced);
 
-    const syncedDevices = devices.filter(device => device.synced);
+        const responseCommand = await fetch("/command", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ command: "volume_down", devices: syncedDevices })
+        });
 
-    const responseCommand = await fetch("/command", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ command: "volume_down", devices: syncedDevices })
-    });
-
-    const result = await responseCommand.json();
-    alert(result.message || result.error);
+        const result = await responseCommand.json();
+        alert(result.message || result.error);
+    } catch (error) {
+        console.error("Error sending command:", error);
+        alert("An error occurred while sending the command.");
+    }
 }
+
+// Inicia o polling ao carregar a página
+window.onload = startDevicePolling;
