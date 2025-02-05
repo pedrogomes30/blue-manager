@@ -77,8 +77,18 @@ class BluetoothController:
         sock = self.connections[address]
         try:
             if command == "volume_down":
+                # Relatório HID para diminuir o volume
                 hid_report = b'\xa1\x02\x00\x00\x00\xe9\x00\x00'
+                print(f"Enviando comando para {address}: {hid_report}")
                 sock.send(hid_report)
+            elif command == "key_press":
+                # Exemplo de relatório HID para pressionar uma tecla (e.g., 'a')
+                hid_report = b'\xa1\x02\x00\x00\x00\xea\x00\x00'
+                print(f"Enviando comando para {address}: {hid_report}")
+                sock.send(hid_report)
+            else:
+                return {"error": f"Unknown command '{command}'"}
             return {"message": f"Comando '{command}' enviado para {address}"}
         except Exception as e:
+            print(f"Erro ao enviar comando para {address}: {str(e)}")
             return {"error": f"Erro ao enviar comando: {str(e)}"}

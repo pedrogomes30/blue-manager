@@ -31,12 +31,12 @@ async function listDevices() {
 }
 
 // Loop de atualização a cada 5 segundos
-async function startDevicePolling() {
-    while (true) {
-        await listDevices();
-        await new Promise(resolve => setTimeout(resolve, 5000));
-    }
-}
+// async function startDevicePolling() {
+//     while (true) {
+//         await listDevices();
+//         await new Promise(resolve => setTimeout(resolve, 500));
+//     }
+// }
 
 async function syncDevice(address) {
     try {
@@ -61,10 +61,18 @@ async function syncDevice(address) {
 
 async function sendVolumeDownCommand() {
     try {
-        const response = await fetch("/devices");
-        const devices = await response.json();
-        // Filtra os dispositivos sincronizados (que possuem conexão persistente)
-        const syncedDevices = devices.filter(device => device.synced);
+        const syncedDeviceList = document.getElementById("synced-devices");
+        const syncedDevices = [];
+
+        if (syncedDeviceList) {
+            const deviceItems = syncedDeviceList.getElementsByTagName("li");
+            for (let item of deviceItems) {
+                if (item.textContent) {
+                    const [name, address] = item.textContent.split(" (");
+                    syncedDevices.push({ name, address: address.slice(0, -1) });
+                }
+            }
+        }
 
         const responseCommand = await fetch("/command", {
             method: "POST",
